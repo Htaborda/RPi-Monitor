@@ -94,8 +94,31 @@ sub Load
   $this->{'version'} = localtime();
 
   # Load default values is not defined yet defined
-  $this->{'daemon'}->{'user'}            ||= "pi";
-  $this->{'daemon'}->{'group'}           ||= "pi";
+  # Raspberry Pi OS Bookworm+ no longer creates a default 'pi' user.
+  # Auto-detect: prefer 'rpimonitor' (created by install.sh), then uid 1000,
+  # then the legacy 'pi' user, and finally fall back to 'nobody'.
+  unless ( $this->{'daemon'}->{'user'} ) {
+    if ( getpwnam('rpimonitor') ) {
+      $this->{'daemon'}->{'user'} = 'rpimonitor';
+    } elsif ( getpwuid(1000) ) {
+      $this->{'daemon'}->{'user'} = (getpwuid(1000))[0];
+    } elsif ( getpwnam('pi') ) {
+      $this->{'daemon'}->{'user'} = 'pi';
+    } else {
+      $this->{'daemon'}->{'user'} = 'nobody';
+    }
+  }
+  unless ( $this->{'daemon'}->{'group'} ) {
+    if ( getgrnam('rpimonitor') ) {
+      $this->{'daemon'}->{'group'} = 'rpimonitor';
+    } elsif ( getgrgid(1000) ) {
+      $this->{'daemon'}->{'group'} = (getgrgid(1000))[0];
+    } elsif ( getgrnam('pi') ) {
+      $this->{'daemon'}->{'group'} = 'pi';
+    } else {
+      $this->{'daemon'}->{'group'} = 'nogroup';
+    }
+  }
   $this->{'daemon'}->{'noserver'}        ||= 0;
   $this->{'daemon'}->{'port'}            ||= 8888;
   $this->{'daemon'}->{'addr'}            ||= '0.0.0.0';

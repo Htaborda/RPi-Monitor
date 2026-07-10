@@ -1,2 +1,5 @@
 # RPi-Monitor official repository
-deb https://giteduberger.fr rpimonitor/
+# On Debian 12 (Bookworm) and later, apt-key has been removed.
+# The key must be stored in /etc/apt/keyrings/ and referenced with signed-by.
+# The install.sh script handles this automatically.
+deb [signed-by=/etc/apt/keyrings/rpimonitor.gpg] https://giteduberger.fr rpimonitor/

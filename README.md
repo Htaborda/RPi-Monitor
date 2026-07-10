@@ -1,67 +1,102 @@
-# Request for collaboration.
+# RPi-Monitor — Community Fork, Updated for 2026 & Raspberry Pi OS Bookworm
 
-I don't have time to manage update to `Rpi-Monitor`. 
+> **This is a community-maintained fork of the original [RPi-Monitor](https://github.com/XavierBerger/RPi-Monitor) by [Xavier Berger](http://rpi-experiences.blogspot.fr/).**
+>
+> Xavier built an outstanding self-monitoring tool that served thousands of Raspberry Pi users for nearly a decade. This fork exists to bring it fully up to date with **Raspberry Pi OS Bookworm** (Debian 12, 2023+) and current tooling — so it runs seamlessly on a fresh install with no manual patching.
+>
+> Fork maintained by: [Htaborda](https://github.com/Htaborda)
 
-The project looks to be used be many people. Some PR need to be reviewed and merged and next version is requiring tests.
+---
 
-If one of you would like to help to manage the project, I'll be happy to grant her/him the right on `Rpi-Monitor` repository.
+## What's fixed in this fork
 
-I let you contact me if you are interrested.
+Raspberry Pi OS has changed significantly since RPi-Monitor was last maintained. The following breaking issues have been resolved:
 
-Thanks,
+| # | Problem | Fix |
+|---|---|---|
+| 1 | `apt-key` was removed in Debian 12 (Bookworm) | APT source now uses `/etc/apt/keyrings/rpimonitor.gpg` with `signed-by` |
+| 2 | Default `pi` user no longer created by Raspberry Pi OS | Daemon auto-detects: `rpimonitor` → uid 1000 → `nobody` |
+| 3 | `aptitude` not installed by default on Bookworm+ | `updatePackagesStatus.pl` now uses `apt-get` |
+| 4 | `/boot` moved to `/boot/firmware` on Bookworm | `sdcard.conf` auto-detects the correct boot partition path |
+| 5 | `vcgencmd` requires `video` group membership | `install.sh` adds the service user to the `video` group |
 
-X@v
+**New in this fork:**
+- `install.sh` — single-command installer for a fresh Raspberry Pi OS Bookworm install
+- `.gitattributes` — enforces LF line endings (shell/Perl scripts break with CRLF on Linux)
 
-----
+---
 
-Looking for a simplest tool, you may have d look to [https://github.com/nekromoff/rpi-monitor-dashboard](https://github.com/nekromoff/rpi-monitor-dashboard)
+## Quick Install (Raspberry Pi OS Bookworm+)
 
-----
+On your Raspberry Pi, run:
+
+```bash
+git clone https://github.com/Htaborda/RPi-Monitor.git
+cd RPi-Monitor
+sudo bash install.sh
+```
+
+The script installs all dependencies, creates a dedicated `rpimonitor` system user, and starts the service. Once running, open:
+
+```
+http://<your-pi-ip>:8888
+```
+
+---
+
+## Original README
+
+---
 
 ![RPi-Monitor logo](docs/source/_static/logo.png)
 
 # Overview
 
-**RPi-Monitor** is an application designed to perform real time monitoring embedded devices.
+**RPi-Monitor** is an application designed to perform real time monitoring of embedded devices.
 
 The development platform is a [Raspberry Pi](http://raspberrypi.org) B.
 
-**RPi-Monitor** provides a lot of feature such as **Embedded Web server**, **Alert messaging**, **SNMP integration**...
+**RPi-Monitor** provides many features such as **Embedded Web server**, **Alert messaging**, **SNMP integration**...
 
-For details, refer to [keys features of RPi-Monitor](https://xavierberger.github.io/RPi-Monitor-docs/01_features.html) in documentation.
+For details, refer to [keys features of RPi-Monitor](https://xavierberger.github.io/RPi-Monitor-docs/01_features.html) in the documentation.
 
 # Screenshots
 
 ![MainPage](docs/source/_static/features002.png)
 
-See [Screenshots](https://xavierberger.github.io/RPi-Monitor-docs/02_screenshots.html) chapter
-of documentation to see more screenshots.
+See the [Screenshots](https://xavierberger.github.io/RPi-Monitor-docs/02_screenshots.html) chapter of documentation for more.
 
 # Installation
 
-Installation of **RPi-Monitor** is detailled in [getting started](https://xavierberger.github.io/RPi-Monitor-docs/11_installation.html) chapter of documentation.
+> **Note:** The original installation method using `apt-key` no longer works on Raspberry Pi OS Bookworm+. Use the `install.sh` script from this fork instead (see above).
 
-Each release can be installed with a Debian package for **Raspbian**.
+For full installation documentation refer to the [getting started](https://xavierberger.github.io/RPi-Monitor-docs/11_installation.html) chapter.
 
-For other (unsupported) distribution (such as Gentoo, ArchLinux) refer to [Custom installation](https://xavierberger.github.io/RPi-Monitor-docs/12_custom_installation.html) chapter of documentation.
+For other distributions (Gentoo, ArchLinux) refer to [Custom installation](https://xavierberger.github.io/RPi-Monitor-docs/12_custom_installation.html).
 
 # Documentation
 
-If you want to install, use or customize **RPi-Monitor** refer to [documentation](https://xavierberger.github.io/RPi-Monitor-docs/index.html)
-
-If you want to see example of configuration and see what **RPi-Monitor** can do, refer to
-[RPi-Monitor Usages](https://xavierberger.github.io/RPi-Monitor-docs/30_index.html).
-
-Frequently Asked Question find answer into the [FAQ](https://xavierberger.github.io/RPi-Monitor-docs/14_faq.html) page.
+- Full documentation: [xavierberger.github.io/RPi-Monitor-docs](https://xavierberger.github.io/RPi-Monitor-docs/index.html)
+- Configuration examples: [RPi-Monitor Usages](https://xavierberger.github.io/RPi-Monitor-docs/30_index.html)
+- FAQ: [xavierberger.github.io/RPi-Monitor-docs/14_faq.html](https://xavierberger.github.io/RPi-Monitor-docs/14_faq.html)
 
 # Development
 
-If you want to participate and propose a pull request, refer to [contributing](https://xavierberger.github.io/RPi-Monitor-docs/41_contributing.html) chapter of documentation.
+If you want to contribute a pull request to the **original project**, refer to [contributing](https://xavierberger.github.io/RPi-Monitor-docs/41_contributing.html).
 
-**Note**: Pull request perfomed on **develop** branch will be integrated as soon as possible. Pull request perform on master branche may only be integrated when a new version is published (or not may not be integrated at all...)
+Pull requests for **Bookworm/modern OS compatibility** are welcome on this fork.
 
 # News / License
 
-**Latest news** : [RPi-Experience Blog](http://rpi-experiences.blogspot.fr/)
+**Latest news**: [RPi-Experience Blog](http://rpi-experiences.blogspot.fr/)
 
 **License**: [GPLv3](LICENSE)
+
+---
+
+## Original author
+
+**Xavier Berger** built and maintained RPi-Monitor for years. This fork would not exist without his work.
+
+> *"I don't have time to manage updates to `Rpi-Monitor`. The project looks to be used by many people. Some PRs need to be reviewed and merged and the next version is requiring tests. If one of you would like to help to manage the project, I'll be happy to grant her/him rights on the `Rpi-Monitor` repository."*
+> — Xavier Berger

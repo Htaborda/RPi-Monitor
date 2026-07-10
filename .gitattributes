@@ -1,0 +1,12 @@
+# Enforce Unix line endings for all text files in this repo.
+# RPi-Monitor runs on Linux; CRLF line endings will break shell scripts,
+# Perl scripts, and configuration files.
+* text=auto eol=lf
+
+# Explicitly mark binary files
+*.png binary
+*.gif binary
+*.eot binary
+*.ttf binary
+*.woff binary
+*.map binary
