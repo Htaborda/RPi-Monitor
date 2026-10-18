@@ -1,0 +1,121 @@
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.23 manpage writer.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "RPIMONITOR-ALERT.CONF" "5" "Oct 18, 2026" "2.13" "RPi-Monitor"
+.SH NAME
+rpimonitor-alert.conf \- RPi-Monitor alert configuration
+.sp
+\fBRPi\-Monitor\fP is able to detect if value exceed a defined value or come back to the normal.
+.SH OVERVIEW
+.sp
+Alert/Cancel are sent only when the state is stable to avoid messages
+flooding when limit is about to be exceeded as shown in schema bellow:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+                        send alert
+                            ^
+ th      th <\-\-\-\-\-\-dh\-\-\-\-\-\->|        th
+  _____   __________________|______   _______           send cancel
+  |   |   |                       |   |     |              ^
+  |   |   |                       |   |     |              |
+__|   |___|                       |___|     |______________|_____
+     tl                          tl        tl<\-\-\-\-\-dl\-\-\-\-\->
+                            |\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-|
+                                    Alert is raised
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+If alert is still active after resend period, alerte is sent again:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+                  send alert                                    resend alert
+                      ^                                               ^
+    th <\-\-\-\-\-dh\-\-\-\-\-\->|<\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-dr\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\->|
+    __________________|_______________________________________________|_____
+    |
+    |
+____|
+   tl                 |\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\->
+                                    Alert is raised
+.EE
+.UNINDENT
+.UNINDENT
+.SH CONFIGURATION
+.sp
+Each alert is identified by its \fB<alert name>\fP\&.
+.INDENT 0.0
+.TP
+.B alert.<alert name>.active=<activation condition>
+<activation condition> defines the alert pre\-condition. If this formula
+returns false, the trigger will not be checked. Default value is 1.
+This command could refer to KPI using keyword \fBdata.<kpi name>\fP
+.TP
+.B alert.<alert name>.kpi=<trigger>
+\fB<trigger>\fP is defining the formula to evaluate. If formula returns true, the
+alert is detected. This command should refer to KPI using keyword \fBdata.<kpi name>\fP
+.TP
+.B alert.<alert name>.maxalertduration=<duration before raise>
+The alert will be dectected immediatly but alert raised commande will
+be executed only afer a defined \fB<duration before raise>\fP in seconds
+(\fBdh\fP in the upper schema)
+.TP
+.B alert.<alert name>.cancelvalidation=<duration before cancel>
+As for alert raising, cancellation command will be executed only after
+\fB<duration before cancel>\fP seconds (\fBdl\fP in the upper schema)
+.TP
+.B alert.<alert name>.resendperiod=<period>
+If alert is still active after \fB<period>\fP seconds, the raise command
+will be executed again (\fBdr\fP in the upper schema).
+.TP
+.B alert.<alert name>.raisecommand=<Raise Command>
+\fB<Raise Command>\fP is the command to executed when an alert is raised.
+This command could refer to KPI using keyword \fBdata.<kpi name>\fP
+.TP
+.B alert.<alert name>.cancelcommand=<Cancel Command>
+\fB<Cancel Command>\fP is the command to executed when an alert is canceled
+This command could refer to KPI using keyword \fBdata.<kpi name>\fP
+.UNINDENT
+.sp
+\fBSee also:\fP
+.INDENT 0.0
+.INDENT 3.5
+Example of implementation in Alert example \%<27_configuration_templates\:.html#\:alerts>
+.UNINDENT
+.UNINDENT
+.SH Author
+Xavier Berger
+.SH Copyright
+2018, Xavier Berger
+.\" End of generated man page.
