@@ -80,16 +80,19 @@ check_and_install_tools() {
     fi
 }
 
-check_and_install_tools || exit 1
+check_and_install_tools || exit 1
 
 # This script dependencies are installed
 
+GITHUB_API_BASE="${GITHUB_API_BASE:-https://api.github.com/repos/RPi-Monitor/RPi-Monitor}"
 DRY_RUN=""
 OPT_YES=0
 OPT_FORCE=0
 OPT_NO_SERVICE=0
 ZIP_FILE=""
+ZIP_PROVIDED=0
 PRE_RELEASE="false"
+PACKAGE_VERSION=""
 TARGET_DIR="${TARGET_DIR:-}"
 
 
@@ -147,6 +150,7 @@ while [[ $# -gt 0 ]]; do
         *)
             if [[ -z "$ZIP_FILE" ]]; then
                 ZIP_FILE="$1"
+                ZIP_PROVIDED=1
             else
                 log_error "Unexpected argument '$1'"
                 show_help >&2
@@ -157,18 +161,213 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Default to ./rpimonitor.zip if not specified
-if [[ -z "$ZIP_FILE" ]]; then
-    ZIP_FILE="./rpimonitor.zip"
-fi
-
 # Verify root privileges (strictly required in both normal and dry-run modes)
 if [[ $EUID -ne 0 ]]; then
     log_error "This script must be run as root (e.g. using sudo)."
     exit 1
 fi
 
-# Verify package archive exists
+# ---------------------------------------------------------------------------
+# GitHub Releases: select and download the appropriate distribution ZIP
+# ---------------------------------------------------------------------------
+
+# Fetch the latest stable release JSON from GitHub (/releases/latest).
+# This endpoint natively excludes pre-releases and drafts.
+# Prints the release JSON on stdout; returns 1 on error.
+_rpi_fetch_stable_release() {
+    local response
+    response=$(curl --fail --location --silent --show-error \
+        "${GITHUB_API_BASE}/releases/latest" 2>&1) || {
+        log_error "Failed to fetch latest stable release from GitHub API: ${response}"
+        return 1
+    }
+    local tag
+    tag=$(echo "${response}" | jq -r '.tag_name // empty' 2>/dev/null)
+    if [[ -z "${tag}" ]]; then
+        log_error "GitHub API response is missing the 'tag_name' field."
+        log_error "Response: ${response}"
+        return 1
+    fi
+    echo "${response}"
+}
+
+# Fetch the most recent pre-release JSON from GitHub (paginated list).
+# Excludes drafts; keeps only releases where prerelease==true.
+# Selects the most recent by published_at across all pages.
+# Prints the release JSON on stdout; returns 1 if none found or on error.
+_rpi_fetch_prerelease() {
+    local page=1
+    local per_page=100
+    local best_release=""
+    local best_date=""
+
+    while true; do
+        local response
+        response=$(curl --fail --location --silent --show-error \
+            "${GITHUB_API_BASE}/releases?per_page=${per_page}&page=${page}" 2>&1) || {
+            log_error "Failed to fetch releases list (page ${page}) from GitHub API: ${response}"
+            return 1
+        }
+
+        # Validate the response is a JSON array
+        local count
+        count=$(echo "${response}" | jq 'if type == "array" then length else -1 end' 2>/dev/null)
+        if [[ "${count:-}" == "-1" ]] || [[ -z "${count:-}" ]]; then
+            log_error "GitHub API returned invalid JSON for releases list (page ${page})."
+            return 1
+        fi
+
+        # No more pages
+        if [[ "${count}" -eq 0 ]]; then
+            break
+        fi
+
+        # Filter: draft==false AND prerelease==true; keep the most-recent on this page
+        local page_best
+        page_best=$(echo "${response}" | jq -c '
+            [.[] | select(.draft == false and .prerelease == true)]
+            | if length == 0 then empty
+              else sort_by(.published_at) | last
+              end
+        ' 2>/dev/null) || true
+
+        if [[ -n "${page_best}" ]]; then
+            local page_date
+            page_date=$(echo "${page_best}" | jq -r '.published_at')
+            if [[ -z "${best_date}" ]] || [[ "${page_date}" > "${best_date}" ]]; then
+                best_release="${page_best}"
+                best_date="${page_date}"
+            fi
+        fi
+
+        # Last page: fewer results than the page size
+        if [[ "${count}" -lt "${per_page}" ]]; then
+            break
+        fi
+
+        page=$((page + 1))
+    done
+
+    if [[ -z "${best_release}" ]]; then
+        log_error "No pre-release found on GitHub (excluding drafts)."
+        return 1
+    fi
+
+    echo "${best_release}"
+}
+
+# Select the appropriate release and download its distribution ZIP asset.
+# Sets globals ZIP_FILE and PACKAGE_VERSION on success.
+# Args: $1 = "true" for pre-release mode, "false" (default) for stable mode.
+_rpi_download_release_zip() {
+    local pre_release="${1:-false}"
+
+    local release_json
+    if [[ "${pre_release}" == "true" ]]; then
+        log_info "Fetching latest pre-release from GitHub..."
+        release_json=$(_rpi_fetch_prerelease) || return 1
+    else
+        log_info "Fetching latest stable release from GitHub..."
+        release_json=$(_rpi_fetch_stable_release) || return 1
+    fi
+
+    local tag_name
+    tag_name=$(echo "${release_json}" | jq -r '.tag_name')
+    # Strip leading 'v' (e.g. v2.14-rc1 -> 2.14-rc1)
+    local version="${tag_name#v}"
+    local asset_name="rpimonitor-${version}.zip"
+    local sha256_asset_name="${asset_name}.sha256"
+
+    log_info "Selected release: ${tag_name}  (asset: ${asset_name})"
+
+    # Locate the versioned distribution ZIP in the release assets.
+    # browser_download_url points to an explicitly uploaded asset, not a
+    # GitHub auto-generated source archive.
+    local download_url
+    download_url=$(echo "${release_json}" | jq -r \
+        --arg name "${asset_name}" \
+        '.assets[] | select(.name == $name) | .browser_download_url // empty')
+
+    if [[ -z "${download_url}" ]]; then
+        log_error "Asset '${asset_name}' not found in release '${tag_name}'."
+        log_error "Available assets: $(echo "${release_json}" | jq -r '[.assets[].name] | join(", ")')"
+        return 1
+    fi
+
+    # Download to a temporary file to avoid leaving a partial archive in place
+    local tmp_zip
+    tmp_zip=$(mktemp --suffix=".zip")
+    log_info "Downloading ${asset_name}..."
+    if ! curl --fail --location --silent --show-error \
+            "${download_url}" --output "${tmp_zip}"; then
+        rm -f "${tmp_zip}"
+        log_error "Failed to download '${asset_name}' from '${download_url}'."
+        return 1
+    fi
+
+    # Reject empty downloads
+    if [[ ! -s "${tmp_zip}" ]]; then
+        rm -f "${tmp_zip}"
+        log_error "Downloaded file is empty: ${asset_name}"
+        return 1
+    fi
+
+    # Validate ZIP magic bytes (PK\x03\x04 = 504b0304)
+    local magic
+    magic=$(od -An -tx1 -N4 "${tmp_zip}" | tr -d ' \n')
+    if [[ "${magic}" != "504b0304"* ]]; then
+        rm -f "${tmp_zip}"
+        log_error "Downloaded file is not a valid ZIP archive: ${asset_name}"
+        return 1
+    fi
+
+    # Optional SHA256 integrity check (only when the .sha256 asset is published)
+    local sha256_url
+    sha256_url=$(echo "${release_json}" | jq -r \
+        --arg name "${sha256_asset_name}" \
+        '.assets[] | select(.name == $name) | .browser_download_url // empty')
+
+    if [[ -n "${sha256_url}" ]]; then
+        log_info "Verifying SHA256 checksum..."
+        local tmp_sha256
+        tmp_sha256=$(mktemp)
+        if curl --fail --location --silent --show-error \
+                "${sha256_url}" --output "${tmp_sha256}" 2>/dev/null; then
+            local expected_hash actual_hash
+            expected_hash=$(awk '{print $1}' "${tmp_sha256}")
+            actual_hash=$(sha256sum "${tmp_zip}" | awk '{print $1}')
+            rm -f "${tmp_sha256}"
+            if [[ "${expected_hash}" != "${actual_hash}" ]]; then
+                rm -f "${tmp_zip}"
+                log_error "SHA256 checksum mismatch for '${asset_name}'."
+                log_error "  Expected: ${expected_hash}"
+                log_error "  Actual:   ${actual_hash}"
+                return 1
+            fi
+            log_success "SHA256 checksum verified."
+        else
+            rm -f "${tmp_sha256}"
+            log_warn "Could not fetch SHA256 file; skipping integrity check."
+        fi
+    fi
+
+    # Move to final destination only after all validations pass
+    local dest_zip="/tmp/${asset_name}"
+    mv "${tmp_zip}" "${dest_zip}"
+
+    PACKAGE_VERSION="${version}"
+    ZIP_FILE="${dest_zip}"
+    log_success "Downloaded: ${dest_zip}"
+}
+
+# If no ZIP archive was supplied on the command line, download the appropriate
+# release from GitHub. Otherwise use the caller-supplied file as-is.
+if [[ ${ZIP_PROVIDED} -eq 0 ]]; then
+    _rpi_download_release_zip "${PRE_RELEASE}" || exit 1
+fi
+
+# Verify the package archive is present (guards the case where a path was
+# provided explicitly but does not exist)
 if [[ ! -f "$ZIP_FILE" ]]; then
     log_error "Package archive '$ZIP_FILE' not found."
     exit 1
@@ -183,18 +382,14 @@ if [[ -f "$BIN_FILE" || -d "$CONF_DIR" ]]; then
     IS_EXISTING=1
 fi
 
-# Placeholders for retrieving versions (to be implemented later)
 get_installed_version() {
     # TODO: implement installed version extraction logic
     echo ""
 }
 
-get_package_version() {
-    echo $(curl -s https://api.github.com/repos/RPi-Monitor/RPi-Monitor/releases | jq -r "[.[] | select(.prerelease == $1)][0].tag_name")
-}
-
 INSTALLED_VERSION=$(get_installed_version)
-PACKAGE_VERSION=$(get_package_version ${PRE_RELEASE})
+# PACKAGE_VERSION is set by _rpi_download_release_zip when downloading from
+# GitHub. When a ZIP is provided explicitly it remains empty (version unknown).
 
 # Display Welcome Banner
 echo ""
