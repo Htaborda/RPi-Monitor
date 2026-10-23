@@ -16,7 +16,7 @@ if [[ -z "$VERSION" ]]; then
     elif git -C "${REPO_ROOT}" describe --tags >/dev/null 2>&1; then
         VERSION=$(git -C "${REPO_ROOT}" describe --tags)
     else
-        VERSION=$(cat "${REPO_ROOT}/VERSION" 2>/dev/null || echo "dev")
+        VERSION=$(cat "${REPO_ROOT}/VERSION")
     fi
 fi
 # Strip leading 'v' if present (e.g. v2.14 -> 2.14)
