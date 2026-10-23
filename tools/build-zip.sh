@@ -29,6 +29,7 @@ BUILD_DIR="${REPO_ROOT}/build"
 STAGING_DIR="${BUILD_DIR}/staging"
 
 rm -rf "${STAGING_DIR}"
+trap 'rm -rf "${STAGING_DIR}"' EXIT
 mkdir -p "${STAGING_DIR}" "${BUILD_DIR}"
 
 # 3. Copy files from src/ to staging/
@@ -54,16 +55,13 @@ chmod 644 "${STAGING_DIR}/etc/cron.d/rpimonitor"
 ZIP_NAME="rpimonitor-${VERSION}.zip"
 TARGET_ZIP="${BUILD_DIR}/${ZIP_NAME}"
 
-rm -f "${TARGET_ZIP}"
+rm -f "${TARGET_ZIP}" "${TARGET_ZIP}.sha256"
 
 # -y stores the symlinks (data.conf, rpimonitord-snmp) as links
 (cd "${STAGING_DIR}" && zip -q -r -y "${TARGET_ZIP}" *)
 
 # Generate SHA256 checksum
 (cd "${BUILD_DIR}" && sha256sum "${ZIP_NAME}" > "${ZIP_NAME}.sha256")
-
-# 7. Clean up staging directory
-rm -rf "${STAGING_DIR}"
 
 echo "==> Package created successfully:"
 echo "    Archive: ${TARGET_ZIP}"
