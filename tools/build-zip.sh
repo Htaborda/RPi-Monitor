@@ -58,16 +58,8 @@ GENERIC_ZIP="${BUILD_DIR}/${GENERIC_ZIP_NAME}"
 
 rm -f "${TARGET_ZIP}" "${GENERIC_ZIP}"
 
-if command -v zip >/dev/null 2>&1; then
-    (cd "${STAGING_DIR}" && zip -q -r -y "${TARGET_ZIP}" *)
-elif command -v bsdtar >/dev/null 2>&1; then
-    (cd "${STAGING_DIR}" && bsdtar -a -cf "${TARGET_ZIP}" *)
-elif command -v 7z >/dev/null 2>&1; then
-    (cd "${STAGING_DIR}" && 7z a -tzip "${TARGET_ZIP}" * >/dev/null)
-else
-    echo "Error: Neither 'zip', 'bsdtar' nor '7z' is installed." >&2
-    exit 1
-fi
+# -y stores the symlinks (data.conf, rpimonitord-snmp) as links
+(cd "${STAGING_DIR}" && zip -q -r -y "${TARGET_ZIP}" *)
 
 # Create generic copy
 cp -f "${TARGET_ZIP}" "${GENERIC_ZIP}"
