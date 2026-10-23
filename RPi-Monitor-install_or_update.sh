@@ -317,34 +317,35 @@ _rpi_download_release_zip() {
         return 1
     fi
 
-    # Optional SHA256 integrity check (only when the .sha256 asset is published)
+    # SHA256 integrity check: the release workflow always publishes the
+    # .sha256 asset, so a missing or unreadable one is an error
     local sha256_url
     sha256_url=$(echo "${release_json}" | jq -r \
         --arg name "${sha256_asset_name}" \
         '.assets[] | select(.name == $name) | .browser_download_url // empty')
 
-    if [[ -n "${sha256_url}" ]]; then
-        log_info "Verifying SHA256 checksum..."
-        local tmp_sha256
-        tmp_sha256=$(mktemp)
-        if curl --fail --location --silent --show-error \
-                "${sha256_url}" --output "${tmp_sha256}" 2>/dev/null; then
-            local expected_hash actual_hash
-            expected_hash=$(awk '{print $1}' "${tmp_sha256}")
-            actual_hash=$(sha256sum "${tmp_zip}" | awk '{print $1}')
-            rm -f "${tmp_sha256}"
-            if [[ "${expected_hash}" != "${actual_hash}" ]]; then
-                log_error "SHA256 checksum mismatch for '${asset_name}'."
-                log_error "  Expected: ${expected_hash}"
-                log_error "  Actual:   ${actual_hash}"
-                return 1
-            fi
-            log_success "SHA256 checksum verified."
-        else
-            rm -f "${tmp_sha256}"
-            log_warn "Could not fetch SHA256 file; skipping integrity check."
-        fi
+    if [[ -z "${sha256_url}" ]]; then
+        log_error "Asset '${sha256_asset_name}' not found in release '${tag_name}'."
+        return 1
     fi
+
+    log_info "Verifying SHA256 checksum..."
+    local tmp_sha256="${TMP_DIR}/${sha256_asset_name}"
+    if ! curl --fail --location --silent --show-error \
+            "${sha256_url}" --output "${tmp_sha256}"; then
+        log_error "Failed to download '${sha256_asset_name}' from '${sha256_url}'."
+        return 1
+    fi
+    local expected_hash actual_hash
+    expected_hash=$(awk '{print $1}' "${tmp_sha256}")
+    actual_hash=$(sha256sum "${tmp_zip}" | awk '{print $1}')
+    if [[ "${expected_hash}" != "${actual_hash}" ]]; then
+        log_error "SHA256 checksum mismatch for '${asset_name}'."
+        log_error "  Expected: ${expected_hash}"
+        log_error "  Actual:   ${actual_hash}"
+        return 1
+    fi
+    log_success "SHA256 checksum verified."
 
     PACKAGE_VERSION="${version}"
     ZIP_FILE="${tmp_zip}"
