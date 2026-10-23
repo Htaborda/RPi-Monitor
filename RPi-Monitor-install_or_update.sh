@@ -109,7 +109,7 @@ Options:
   -y, --yes          Non-interactive / automatic mode (required to update without a TTY)
   --force            Force installation/update even if already up to date
   --dry-run          Simulate actions: prefix system commands with 'echo' without modifying system
-  --pre-release      Install a pre-release (may not be stable)
+  --pre-release      Install the newest release, pre-releases included (may not be stable)
   --no-service       Do not enable or start systemd service (for containerized CI environments)
   -h, --help         Show this help message and exit
 EOF
@@ -191,69 +191,28 @@ _rpi_fetch_stable_release() {
     echo "${response}"
 }
 
-# Fetch the most recent pre-release JSON from GitHub (paginated list).
-# Excludes drafts; keeps only releases where prerelease==true.
-# Selects the most recent by published_at across all pages.
+# Fetch the newest release JSON from GitHub, pre-release or stable.
+# Drafts are excluded; the newest is picked by published_at among the 100
+# most recent releases, so an older pre-release never wins over a stable one.
 # Prints the release JSON on stdout; returns 1 if none found or on error.
-_rpi_fetch_prerelease() {
-    local page=1
-    local per_page=100
-    local best_release=""
-    local best_date=""
+_rpi_fetch_newest_release() {
+    local response
+    response=$(curl --fail --location --silent --show-error \
+        "${GITHUB_API_BASE}/releases?per_page=100" 2>&1) || {
+        log_error "Failed to fetch releases list from GitHub API: ${response}"
+        return 1
+    }
 
-    while true; do
-        local response
-        response=$(curl --fail --location --silent --show-error \
-            "${GITHUB_API_BASE}/releases?per_page=${per_page}&page=${page}" 2>&1) || {
-            log_error "Failed to fetch releases list (page ${page}) from GitHub API: ${response}"
-            return 1
-        }
-
-        # Validate the response is a JSON array
-        local count
-        count=$(echo "${response}" | jq 'if type == "array" then length else -1 end' 2>/dev/null)
-        if [[ "${count:-}" == "-1" ]] || [[ -z "${count:-}" ]]; then
-            log_error "GitHub API returned invalid JSON for releases list (page ${page})."
-            return 1
-        fi
-
-        # No more pages
-        if [[ "${count}" -eq 0 ]]; then
-            break
-        fi
-
-        # Filter: draft==false AND prerelease==true; keep the most-recent on this page
-        local page_best
-        page_best=$(echo "${response}" | jq -c '
-            [.[] | select(.draft == false and .prerelease == true)]
-            | if length == 0 then empty
-              else sort_by(.published_at) | last
-              end
-        ' 2>/dev/null) || true
-
-        if [[ -n "${page_best}" ]]; then
-            local page_date
-            page_date=$(echo "${page_best}" | jq -r '.published_at')
-            if [[ -z "${best_date}" ]] || [[ "${page_date}" > "${best_date}" ]]; then
-                best_release="${page_best}"
-                best_date="${page_date}"
-            fi
-        fi
-
-        # Last page: fewer results than the page size
-        if [[ "${count}" -lt "${per_page}" ]]; then
-            break
-        fi
-
-        page=$((page + 1))
-    done
-
-    if [[ -z "${best_release}" ]]; then
-        log_error "No pre-release found on GitHub (excluding drafts)."
+    local release
+    release=$(echo "${response}" | jq -c \
+        '[.[] | select(.draft == false)] | max_by(.published_at) // empty' 2>/dev/null)
+    if [[ -z "${release}" ]]; then
+        log_error "No release found on GitHub (excluding drafts)."
+        log_error "Response: ${response}"
         return 1
     fi
 
-    echo "${best_release}"
+    echo "${release}"
 }
 
 # Select the appropriate release and download its distribution ZIP asset.
@@ -264,8 +223,8 @@ _rpi_download_release_zip() {
 
     local release_json
     if [[ "${pre_release}" == "true" ]]; then
-        log_info "Fetching latest pre-release from GitHub..."
-        release_json=$(_rpi_fetch_prerelease) || return 1
+        log_info "Fetching newest release (pre-releases included) from GitHub..."
+        release_json=$(_rpi_fetch_newest_release) || return 1
     else
         log_info "Fetching latest stable release from GitHub..."
         release_json=$(_rpi_fetch_stable_release) || return 1
