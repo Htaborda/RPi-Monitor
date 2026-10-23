@@ -512,7 +512,10 @@ fi
 
 # Configuration handling:
 # No configuration directory: deploy configuration and templates from zip.
-# Existing one (update or leftover): strictly preserve it untouched.
+# Existing one (update or leftover): never overwrite a file. Missing templates
+# are added; for a differing one the packaged version is saved as <name>.new,
+# as dpkg does. data.conf links to template/raspbian.conf, so overwriting a
+# template would lose user changes. Only include= loads templates: a .new is inert.
 log_step "Configuring RPi-Monitor..."
 if [[ ! -d "${CONF_DIR}" ]]; then
     log_info "No configuration found: deploying configuration and templates..."
@@ -522,7 +525,19 @@ if [[ ! -d "${CONF_DIR}" ]]; then
         ${DRY_RUN} ln -sf template/raspbian.conf "${CONF_DIR}/data.conf"
     fi
 else
-    log_info "Existing configuration and templates in ${CONF_DIR}/ are preserved untouched."
+    log_info "Existing configuration in ${CONF_DIR}/ is preserved."
+    ${DRY_RUN} mkdir -p "${CONF_DIR}/template"
+    for item in "$TMP_DIR/etc/rpimonitor/template/"*; do
+        bname=$(basename "$item")
+        target="${CONF_DIR}/template/$bname"
+        if [[ ! -e "$target" ]]; then
+            log_info "New template added: $bname"
+            ${DRY_RUN} cp "$item" "$target"
+        elif ! cmp -s "$item" "$target"; then
+            log_warn "Template $bname differs from the packaged version, saved as $bname.new"
+            ${DRY_RUN} cp "$item" "$target.new"
+        fi
+    done
 fi
 
 # Systemd service activation and startup.
