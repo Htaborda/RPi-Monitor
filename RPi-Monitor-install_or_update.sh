@@ -575,10 +575,23 @@ if [[ -x "${TARGET_DIR}/usr/share/rpimonitor/scripts/updatePackagesStatus.pl" ]]
     fi
 fi
 
+if [[ -n "$DRY_RUN" ]]; then
+    log_success "Dry run completed: the system was not modified."
+    exit 0
+fi
+
+# Web port as rpimonitord reads it: last daemon.port= line, else its default
+WEB_PORT=8888
+if [[ -f "${CONF_DIR}/daemon.conf" ]]; then
+    WEB_PORT=$(sed -n 's/^daemon\.port=//p' "${CONF_DIR}/daemon.conf" | tail -n 1)
+    WEB_PORT="${WEB_PORT:-8888}"
+fi
+WEB_URL=$(printf '%-28s' "http://<server-ip>:${WEB_PORT}/")
+
 echo ""
 echo -e "${C_BOLD_GREEN}┌───────────────────────────────────────────────────────────┐${C_RESET}"
 echo -e "${C_BOLD_GREEN}│${C_RESET}  ${C_BOLD}RPi-Monitor installation/update completed successfully!${C_RESET}  ${C_BOLD_GREEN}│${C_RESET}"
 echo -e "${C_BOLD_GREEN}│${C_RESET}                                                           ${C_BOLD_GREEN}│${C_RESET}"
-echo -e "${C_BOLD_GREEN}│${C_RESET}  Access the web interface at: ${C_BOLD_CYAN}http://<server-ip>:8888/${C_RESET}    ${C_BOLD_GREEN}│${C_RESET}"
+echo -e "${C_BOLD_GREEN}│${C_RESET}  Access the web interface at: ${C_BOLD_CYAN}${WEB_URL}${C_RESET}${C_BOLD_GREEN}│${C_RESET}"
 echo -e "${C_BOLD_GREEN}└───────────────────────────────────────────────────────────┘${C_RESET}"
 echo ""
