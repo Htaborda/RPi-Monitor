@@ -166,6 +166,13 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+# Without -y the confirmation prompt needs a terminal: refuse before downloading
+if [[ $OPT_YES -eq 0 && ! -t 0 ]]; then
+    log_error "Non-interactive environment detected without -y/--yes."
+    log_error "Please specify -y/--yes to confirm automatically, or run in an interactive terminal."
+    exit 1
+fi
+
 # curl and jq are only needed to download the release
 if [[ ${ZIP_PROVIDED} -eq 0 ]]; then
     check_tools curl jq unzip
@@ -419,7 +426,7 @@ fi
 # Confirmation prompt
 if [[ $OPT_YES -eq 1 ]]; then
     log_info "Non-interactive mode (-y): proceeding with ${ACTION_DESC} automatically."
-elif [[ -t 0 ]]; then
+else
     read -r -p "Do you want to proceed with the ${ACTION_DESC}? [y/N] " response
     case "$response" in
         [yY]|[yY][eE][sS])
@@ -430,10 +437,6 @@ elif [[ -t 0 ]]; then
             exit 0
             ;;
     esac
-else
-    log_error "Non-interactive environment detected without -y/--yes."
-    log_error "Please specify -y/--yes to confirm automatically, or run in an interactive terminal."
-    exit 1
 fi
 
 # Extract ZIP archive into the temporary directory
