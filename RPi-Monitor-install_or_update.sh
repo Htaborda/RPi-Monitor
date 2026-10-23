@@ -167,6 +167,16 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+# Refuse to overwrite the Debian package: a later 'apt remove' or 'apt upgrade'
+# would delete or replace the files deployed here. Its removal keeps
+# /etc/rpimonitor, which this script then preserves.
+if [[ "$(dpkg-query -W -f='${Status}' rpimonitor 2>/dev/null)" == "install ok installed" ]]; then
+    log_error "RPi-Monitor is installed from its Debian package."
+    log_error "Remove it first (configuration in /etc/rpimonitor is kept), then rerun this script:"
+    log_error "  sudo apt remove rpimonitor"
+    exit 1
+fi
+
 # ---------------------------------------------------------------------------
 # GitHub Releases: select and download the appropriate distribution ZIP
 # ---------------------------------------------------------------------------
