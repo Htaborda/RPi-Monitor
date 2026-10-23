@@ -480,7 +480,7 @@ fi
 # Web assets and scripts
 if [[ -d "$TMP_DIR/usr/share/rpimonitor" ]]; then
     ${DRY_RUN} cp -r "$TMP_DIR/usr/share/rpimonitor/"* "${TARGET_DIR}/usr/share/rpimonitor/"
-    ${DRY_RUN} chmod +x "${TARGET_DIR}/usr/share/rpimonitor/scripts/"*.pl 2>/dev/null || true
+    ${DRY_RUN} chmod +x "${TARGET_DIR}/usr/share/rpimonitor/scripts/"*.pl
 fi
 
 # Cron configuration
@@ -497,13 +497,13 @@ fi
 # Manual pages if present in package
 if [[ -d "$TMP_DIR/usr/share/man" ]]; then
     ${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/share/man/man1" "${TARGET_DIR}/usr/share/man/man5"
-    ${DRY_RUN} cp -r "$TMP_DIR/usr/share/man/"* "${TARGET_DIR}/usr/share/man/" 2>/dev/null || true
+    ${DRY_RUN} cp -r "$TMP_DIR/usr/share/man/"* "${TARGET_DIR}/usr/share/man/"
 fi
 
 # Deploy systemd unit files
 if [[ -d "$TMP_DIR/usr/lib/systemd/system" ]]; then
     ${DRY_RUN} cp "$TMP_DIR/usr/lib/systemd/system/rpimonitord.service" "${TARGET_DIR}/usr/lib/systemd/system/"
-    ${DRY_RUN} cp "$TMP_DIR/usr/lib/systemd/system/rpimonitord-upgradable."* "${TARGET_DIR}/usr/lib/systemd/system/" 2>/dev/null || true
+    ${DRY_RUN} cp "$TMP_DIR/usr/lib/systemd/system/rpimonitord-upgradable."* "${TARGET_DIR}/usr/lib/systemd/system/"
 fi
 
 # Deploy var/lib/rpimonitor files without overwriting existing data or RRDs
@@ -563,7 +563,10 @@ fi
 # Post-install package status initialization
 if [[ -x "${TARGET_DIR}/usr/share/rpimonitor/scripts/updatePackagesStatus.pl" ]]; then
     log_step "Initializing package status..."
-    ${DRY_RUN} "${TARGET_DIR}/usr/share/rpimonitor/scripts/updatePackagesStatus.pl" 2>/dev/null || true
+    # Not fatal: the installation is complete and the daily cron job retries
+    if ! ${DRY_RUN} "${TARGET_DIR}/usr/share/rpimonitor/scripts/updatePackagesStatus.pl"; then
+        log_warn "Package status initialization failed; the daily cron job will retry it."
+    fi
 fi
 
 echo ""

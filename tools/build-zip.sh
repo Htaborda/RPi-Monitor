@@ -43,9 +43,9 @@ sed -i "s/{DEVELOPMENT}/${VERSION}/g" "${STAGING_DIR}/usr/share/rpimonitor/web/j
 
 # 5. Ensure execution rights and permissions
 chmod +x "${STAGING_DIR}/usr/bin/rpimonitord"
-chmod +x "${STAGING_DIR}/usr/share/rpimonitor/scripts/"*.pl 2>/dev/null || true
-chmod +x "${STAGING_DIR}/usr/share/rpimonitor/scripts/"*.sh 2>/dev/null || true
-chmod 644 "${STAGING_DIR}/etc/cron.d/rpimonitor" 2>/dev/null || true
+chmod +x "${STAGING_DIR}/usr/share/rpimonitor/scripts/"*.pl
+chmod +x "${STAGING_DIR}/usr/share/rpimonitor/scripts/"*.sh
+chmod 644 "${STAGING_DIR}/etc/cron.d/rpimonitor"
 
 # Ensure symlink for rpimonitord-snmp
 (cd "${STAGING_DIR}/usr/bin" && ln -sf rpimonitord rpimonitord-snmp)
