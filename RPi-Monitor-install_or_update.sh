@@ -294,20 +294,17 @@ _rpi_download_release_zip() {
         return 1
     fi
 
-    # Download to a temporary file to avoid leaving a partial archive in place
-    local tmp_zip
-    tmp_zip=$(mktemp --suffix=".zip")
+    # Download into the temporary directory, removed on exit
+    local tmp_zip="${TMP_DIR}/${asset_name}"
     log_info "Downloading ${asset_name}..."
     if ! curl --fail --location --silent --show-error \
             "${download_url}" --output "${tmp_zip}"; then
-        rm -f "${tmp_zip}"
         log_error "Failed to download '${asset_name}' from '${download_url}'."
         return 1
     fi
 
     # Reject empty downloads
     if [[ ! -s "${tmp_zip}" ]]; then
-        rm -f "${tmp_zip}"
         log_error "Downloaded file is empty: ${asset_name}"
         return 1
     fi
@@ -316,7 +313,6 @@ _rpi_download_release_zip() {
     local magic
     magic=$(od -An -tx1 -N4 "${tmp_zip}" | tr -d ' \n')
     if [[ "${magic}" != "504b0304"* ]]; then
-        rm -f "${tmp_zip}"
         log_error "Downloaded file is not a valid ZIP archive: ${asset_name}"
         return 1
     fi
@@ -338,7 +334,6 @@ _rpi_download_release_zip() {
             actual_hash=$(sha256sum "${tmp_zip}" | awk '{print $1}')
             rm -f "${tmp_sha256}"
             if [[ "${expected_hash}" != "${actual_hash}" ]]; then
-                rm -f "${tmp_zip}"
                 log_error "SHA256 checksum mismatch for '${asset_name}'."
                 log_error "  Expected: ${expected_hash}"
                 log_error "  Actual:   ${actual_hash}"
@@ -351,14 +346,18 @@ _rpi_download_release_zip() {
         fi
     fi
 
-    # Move to final destination only after all validations pass
-    local dest_zip="/tmp/${asset_name}"
-    mv "${tmp_zip}" "${dest_zip}"
-
     PACKAGE_VERSION="${version}"
-    ZIP_FILE="${dest_zip}"
-    log_success "Downloaded: ${dest_zip}"
+    ZIP_FILE="${tmp_zip}"
+    log_success "Downloaded: ${tmp_zip}"
 }
+
+# Temporary directory for the downloaded archive and its extraction,
+# removed on exit whatever the outcome
+TMP_DIR=$(mktemp -d)
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
 
 # If no ZIP archive was supplied on the command line, download the appropriate
 # release from GitHub. Otherwise use the caller-supplied file as-is.
@@ -461,13 +460,7 @@ else
     exit 1
 fi
 
-# Extract ZIP archive into an isolated temporary directory
-TMP_DIR=$(mktemp -d)
-cleanup() {
-    rm -rf "$TMP_DIR"
-}
-trap cleanup EXIT
-
+# Extract ZIP archive into the temporary directory
 log_step "Extracting package archive..."
 log_info "Extracting $ZIP_FILE to temporary directory..."
 unzip -q "$ZIP_FILE" -d "$TMP_DIR"
