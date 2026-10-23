@@ -527,9 +527,6 @@ if [[ ! -d "${CONF_DIR}" ]]; then
     log_info "No configuration found: deploying configuration and templates..."
     ${DRY_RUN} mkdir -p "${CONF_DIR}"
     ${DRY_RUN} cp -r "$TMP_DIR/etc/rpimonitor/"* "${CONF_DIR}/"
-    if [[ ! -e "${CONF_DIR}/data.conf" ]]; then
-        ${DRY_RUN} ln -sf template/raspbian.conf "${CONF_DIR}/data.conf"
-    fi
 else
     log_info "Existing configuration in ${CONF_DIR}/ is preserved."
     ${DRY_RUN} mkdir -p "${CONF_DIR}/template"
