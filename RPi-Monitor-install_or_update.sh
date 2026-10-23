@@ -373,12 +373,13 @@ if [[ ! -f "$ZIP_FILE" ]]; then
     exit 1
 fi
 
-# Detect existing installation
+# Detect existing installation from the binary: the configuration alone may
+# be a leftover of 'apt remove' and does not mean the program is installed.
 CONF_DIR="${TARGET_DIR}/etc/rpimonitor"
 BIN_FILE="${TARGET_DIR}/usr/bin/rpimonitord"
 IS_EXISTING=0
 
-if [[ -f "$BIN_FILE" || -d "$CONF_DIR" ]]; then
+if [[ -f "$BIN_FILE" ]]; then
     IS_EXISTING=1
 fi
 
@@ -403,12 +404,16 @@ if [[ $IS_EXISTING -eq 1 ]]; then
     echo -e "  ${C_BOLD}Operation Mode:${C_RESET}   ${C_BOLD_YELLOW}UPDATE${C_RESET} (existing installation detected)"
     echo -e "  ${C_BOLD}Installed Ver:${C_RESET}    ${INSTALLED_VERSION:-unknown}"
     echo -e "  ${C_BOLD}Target Ver:${C_RESET}       ${PACKAGE_VERSION:-unknown}"
-    echo -e "  ${C_DIM}Note: Existing configuration in ${CONF_DIR} will be preserved.${C_RESET}"
 else
     ACTION_DESC="installation"
     echo -e "  ${C_BOLD}Operation Mode:${C_RESET}   ${C_BOLD_GREEN}FRESH INSTALLATION${C_RESET} (new installation)"
     echo -e "  ${C_BOLD}Target Ver:${C_RESET}       ${PACKAGE_VERSION:-unknown}"
-    echo -e "  ${C_DIM}Note: Dependencies will be installed and default configuration deployed.${C_RESET}"
+    echo -e "  ${C_DIM}Note: Dependencies will be installed.${C_RESET}"
+fi
+if [[ -d "$CONF_DIR" ]]; then
+    echo -e "  ${C_DIM}Note: Existing configuration in ${CONF_DIR} will be preserved.${C_RESET}"
+else
+    echo -e "  ${C_DIM}Note: Default configuration will be deployed.${C_RESET}"
 fi
 
 echo -e "  ${C_BOLD}Package Archive:${C_RESET}  ${ZIP_FILE}"
@@ -492,15 +497,13 @@ else
     log_info "Update mode: skipping prerequisite package installation."
 fi
 
-# Create target directories (fresh installation only)
-if [[ $IS_EXISTING -eq 0 ]]; then
-    log_step "Creating target directories..."
-    ${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/bin"
-    ${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/share/rpimonitor"
-    ${DRY_RUN} mkdir -p "${TARGET_DIR}/var/lib/rpimonitor"
-    ${DRY_RUN} mkdir -p "${TARGET_DIR}/etc/cron.d"
-    ${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/lib/systemd/system"
-fi
+# Create target directories (also on update: any of them may be missing)
+log_step "Creating target directories..."
+${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/bin"
+${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/share/rpimonitor"
+${DRY_RUN} mkdir -p "${TARGET_DIR}/var/lib/rpimonitor"
+${DRY_RUN} mkdir -p "${TARGET_DIR}/etc/cron.d"
+${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/lib/systemd/system"
 
 # Deploy application files
 log_step "Deploying RPi-Monitor files..."
@@ -525,17 +528,13 @@ fi
 
 # SNMP configuration if present in package
 if [[ -d "$TMP_DIR/etc/snmp" ]]; then
-    if [[ $IS_EXISTING -eq 0 ]]; then
-        ${DRY_RUN} mkdir -p "${TARGET_DIR}/etc/snmp"
-    fi
+    ${DRY_RUN} mkdir -p "${TARGET_DIR}/etc/snmp"
     ${DRY_RUN} cp -r "$TMP_DIR/etc/snmp/"* "${TARGET_DIR}/etc/snmp/"
 fi
 
 # Manual pages if present in package
 if [[ -d "$TMP_DIR/usr/share/man" ]]; then
-    if [[ $IS_EXISTING -eq 0 ]]; then
-        ${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/share/man/man1" "${TARGET_DIR}/usr/share/man/man5"
-    fi
+    ${DRY_RUN} mkdir -p "${TARGET_DIR}/usr/share/man/man1" "${TARGET_DIR}/usr/share/man/man5"
     ${DRY_RUN} cp -r "$TMP_DIR/usr/share/man/"* "${TARGET_DIR}/usr/share/man/" 2>/dev/null || true
 fi
 
@@ -556,18 +555,18 @@ if [[ -d "$TMP_DIR/var/lib/rpimonitor" ]]; then
 fi
 
 # Configuration handling:
-# On fresh installation: deploy configuration and templates from zip.
-# On update: strictly preserve configuration and templates untouched.
+# No configuration directory: deploy configuration and templates from zip.
+# Existing one (update or leftover): strictly preserve it untouched.
 log_step "Configuring RPi-Monitor..."
-if [[ $IS_EXISTING -eq 0 ]]; then
-    log_info "Fresh installation: deploying configuration and templates..."
+if [[ ! -d "${CONF_DIR}" ]]; then
+    log_info "No configuration found: deploying configuration and templates..."
     ${DRY_RUN} mkdir -p "${CONF_DIR}"
     ${DRY_RUN} cp -r "$TMP_DIR/etc/rpimonitor/"* "${CONF_DIR}/"
     if [[ ! -e "${CONF_DIR}/data.conf" ]]; then
         ${DRY_RUN} ln -sf template/raspbian.conf "${CONF_DIR}/data.conf"
     fi
 else
-    log_info "Update mode: configuration and templates in ${CONF_DIR}/ are preserved untouched."
+    log_info "Existing configuration and templates in ${CONF_DIR}/ are preserved untouched."
 fi
 
 # Systemd service activation and startup
