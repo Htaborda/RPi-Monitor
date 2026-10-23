@@ -97,7 +97,8 @@ Usage: sudo ./RPi-Monitor-install_or_update.sh [OPTIONS] [ARCHIVE.zip]
 Unified installation and update script for RPi-Monitor (Debian / Raspbian / Ubuntu).
 
 Arguments:
-  ARCHIVE.zip        Path to RPi-Monitor zip package (default: ./rpimonitor.zip)
+  ARCHIVE.zip        Local RPi-Monitor zip package (default: download the latest
+                     stable release from GitHub, see --pre-release)
 
 Options:
   -y, --yes          Non-interactive / automatic mode (required to update without a TTY)
@@ -106,6 +107,10 @@ Options:
   --pre-release      Install the newest release, pre-releases included (may not be stable)
   --no-service       Do not enable or start systemd service (for containerized CI environments)
   -h, --help         Show this help message and exit
+
+Environment:
+  TARGET_DIR         Deploy the files under this root instead of / (systemd and
+                     dpkg still refer to the running system)
 EOF
 }
 
