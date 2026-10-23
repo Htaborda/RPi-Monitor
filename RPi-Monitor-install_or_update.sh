@@ -60,29 +60,23 @@ log_error() {
     echo -e "${C_BOLD_RED}[ERROR]${C_RESET} $*" >&2
 }
 
-check_and_install_tools() {
-    local packages=("curl" "jq" "unzip")
+# Exit with the install command if any of the given tools is missing
+check_tools() {
     local missing_packages=()
 
-    # Vérification de chaque outil
-    for pkg in "${packages[@]}"; do
+    for pkg in "$@"; do
         if ! command -v "$pkg" &> /dev/null; then
             log_error "${C_BOLD}$pkg${C_RESET} is not installed."
             missing_packages+=("$pkg")
         fi
     done
 
-    # Si des paquets manquent, on affiche la commande d'installation
     if [ ${#missing_packages[@]} -gt 0 ]; then
         echo "Execute the following command to install missing package(s):"
         echo "  sudo apt update && sudo apt install -y ${missing_packages[*]}"
         exit 1
     fi
 }
-
-check_and_install_tools || exit 1
-
-# This script dependencies are installed
 
 GITHUB_API_BASE="${GITHUB_API_BASE:-https://api.github.com/repos/RPi-Monitor/RPi-Monitor}"
 DRY_RUN=""
@@ -165,6 +159,13 @@ done
 if [[ $EUID -ne 0 ]]; then
     log_error "This script must be run as root (e.g. using sudo)."
     exit 1
+fi
+
+# curl and jq are only needed to download the release
+if [[ ${ZIP_PROVIDED} -eq 0 ]]; then
+    check_tools curl jq unzip
+else
+    check_tools unzip
 fi
 
 # Refuse to overwrite the Debian package: a later 'apt remove' or 'apt upgrade'
