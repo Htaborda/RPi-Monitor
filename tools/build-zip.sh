@@ -52,29 +52,19 @@ chmod 644 "${STAGING_DIR}/etc/cron.d/rpimonitor"
 
 # 6. Create ZIP archive
 ZIP_NAME="rpimonitor-${VERSION}.zip"
-GENERIC_ZIP_NAME="rpimonitor.zip"
 TARGET_ZIP="${BUILD_DIR}/${ZIP_NAME}"
-GENERIC_ZIP="${BUILD_DIR}/${GENERIC_ZIP_NAME}"
 
-rm -f "${TARGET_ZIP}" "${GENERIC_ZIP}"
+rm -f "${TARGET_ZIP}"
 
 # -y stores the symlinks (data.conf, rpimonitord-snmp) as links
 (cd "${STAGING_DIR}" && zip -q -r -y "${TARGET_ZIP}" *)
 
-# Create generic copy
-cp -f "${TARGET_ZIP}" "${GENERIC_ZIP}"
-
-# Generate SHA256 checksums
-(
-    cd "${BUILD_DIR}"
-    sha256sum "${ZIP_NAME}" > "${ZIP_NAME}.sha256"
-    sha256sum "${GENERIC_ZIP_NAME}" > "${GENERIC_ZIP_NAME}.sha256"
-)
+# Generate SHA256 checksum
+(cd "${BUILD_DIR}" && sha256sum "${ZIP_NAME}" > "${ZIP_NAME}.sha256")
 
 # 7. Clean up staging directory
 rm -rf "${STAGING_DIR}"
 
 echo "==> Package created successfully:"
 echo "    Archive: ${TARGET_ZIP}"
-echo "    Generic: ${GENERIC_ZIP}"
 echo "    SHA256:  $(cat "${TARGET_ZIP}.sha256")"

@@ -41,7 +41,6 @@ jobs:
           name: "v${{ env.VERSION }}"
           files: |
             build/rpimonitor-${{ env.VERSION }}.zip
-            build/rpimonitor.zip
             build/rpimonitor-${{ env.VERSION }}.zip.sha256
             RPi-Monitor-install_or_update.sh
           generate_release_notes: true
