@@ -549,10 +549,16 @@ fi
 log_step "Configuring systemd service..."
 if [[ $OPT_NO_SERVICE -eq 0 ]]; then
     if [[ -d /run/systemd/system ]]; then
-        log_info "Enabling and restarting rpimonitord systemd service..."
         ${DRY_RUN} systemctl daemon-reload
-        ${DRY_RUN} systemctl enable rpimonitord
-        ${DRY_RUN} systemctl restart rpimonitord
+        if [[ $IS_EXISTING -eq 0 ]]; then
+            log_info "Enabling and starting rpimonitord systemd service..."
+            ${DRY_RUN} systemctl enable rpimonitord
+            ${DRY_RUN} systemctl restart rpimonitord
+        else
+            # Keep the admin's enable/disable choice; restart only if running
+            log_info "Restarting rpimonitord systemd service if it is running..."
+            ${DRY_RUN} systemctl try-restart rpimonitord
+        fi
     else
         log_info "systemd is not active in this environment. Skipping service management."
     fi
