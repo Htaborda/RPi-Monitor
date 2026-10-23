@@ -21,7 +21,7 @@ use strict;
 if(which('aptitude')) {
   open ( FILE, 'aptitude -F%p --disable-columns search ~U |') or die "$!\n";
 } elsif (which('apt')) {
-  open ( FILE, 'apt list --upgradable 2>/dev/null | grep -v "^Listing" | cut -d/ -f1 |') or die "$!\n";
+  open ( FILE, 'LC_ALL=C apt list --upgradable 2>/dev/null | grep -v "^Listing" | cut -d/ -f1 |') or die "$!\n";
 } elsif (which('checkupdates')) {
   open ( FILE, 'checkupdates |' ) or die "$!\n";
 } else {
