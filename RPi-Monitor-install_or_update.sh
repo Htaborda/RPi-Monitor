@@ -461,8 +461,7 @@ else
     exit 1
 fi
 
-# Extract ZIP archive into an isolated temporary directory.
-# Done before stopping the service so a bad archive leaves it running.
+# Extract ZIP archive into an isolated temporary directory
 TMP_DIR=$(mktemp -d)
 cleanup() {
     rm -rf "$TMP_DIR"
@@ -472,14 +471,6 @@ trap cleanup EXIT
 log_step "Extracting package archive..."
 log_info "Extracting $ZIP_FILE to temporary directory..."
 unzip -q "$ZIP_FILE" -d "$TMP_DIR"
-
-# Stop service if updating an existing installation
-if [[ $IS_EXISTING -eq 1 ]]; then
-    if [[ $OPT_NO_SERVICE -eq 0 && -d /run/systemd/system ]]; then
-        log_step "Stopping rpimonitord service before update..."
-        ${DRY_RUN} systemctl stop rpimonitord 2>/dev/null || true
-    fi
-fi
 
 # Install prerequisite packages via apt-get (fresh installation only)
 if [[ $IS_EXISTING -eq 0 ]]; then
@@ -571,7 +562,9 @@ else
     log_info "Existing configuration and templates in ${CONF_DIR}/ are preserved untouched."
 fi
 
-# Systemd service activation and startup
+# Systemd service activation and startup.
+# The service is not stopped before deploying: rpimonitord runs from its
+# compiled copy in memory, so a failed update leaves the old one running.
 log_step "Configuring systemd service..."
 if [[ $OPT_NO_SERVICE -eq 0 ]]; then
     if [[ -d /run/systemd/system ]]; then
