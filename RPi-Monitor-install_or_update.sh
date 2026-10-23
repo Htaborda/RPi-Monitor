@@ -61,7 +61,7 @@ log_error() {
 }
 
 check_and_install_tools() {
-    local packages=("curl" "jq")
+    local packages=("curl" "jq" "unzip")
     local missing_packages=()
 
     # Vérification de chaque outil
@@ -454,6 +454,18 @@ else
     exit 1
 fi
 
+# Extract ZIP archive into an isolated temporary directory.
+# Done before stopping the service so a bad archive leaves it running.
+TMP_DIR=$(mktemp -d)
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
+
+log_step "Extracting package archive..."
+log_info "Extracting $ZIP_FILE to temporary directory..."
+unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+
 # Stop service if updating an existing installation
 if [[ $IS_EXISTING -eq 1 ]]; then
     if [[ $OPT_NO_SERVICE -eq 0 && -d /run/systemd/system ]]; then
@@ -475,22 +487,10 @@ if [[ $IS_EXISTING -eq 0 ]]; then
         libipc-sharelite-perl \
         libfile-which-perl \
         libsnmp-extension-passpersist-perl \
-        aptitude \
-        unzip
+        aptitude
 else
     log_info "Update mode: skipping prerequisite package installation."
 fi
-
-# Extract ZIP archive into an isolated temporary directory
-TMP_DIR=$(mktemp -d)
-cleanup() {
-    rm -rf "$TMP_DIR"
-}
-trap cleanup EXIT
-
-log_step "Extracting package archive..."
-log_info "Extracting $ZIP_FILE to temporary directory..."
-unzip -q "$ZIP_FILE" -d "$TMP_DIR"
 
 # Create target directories (fresh installation only)
 if [[ $IS_EXISTING -eq 0 ]]; then
