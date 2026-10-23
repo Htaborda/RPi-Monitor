@@ -383,9 +383,11 @@ if [[ -f "$BIN_FILE" ]]; then
     IS_EXISTING=1
 fi
 
+# Read the version from the script rather than running 'rpimonitord -V', which
+# loads the configuration and rewrites stat/empty.rrd before parsing options.
 get_installed_version() {
-    # TODO: implement installed version extraction logic
-    echo ""
+    [[ $IS_EXISTING -eq 1 ]] || return 0
+    sed -n 's/^my \$VERSION *= *"\(.*\)";$/\1/p' "$BIN_FILE"
 }
 
 INSTALLED_VERSION=$(get_installed_version)
