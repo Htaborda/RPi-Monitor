@@ -16,13 +16,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extract version from git tag
-        id: vars
         run: |
           TAG_NAME="${GITHUB_REF_NAME}"
           VERSION="${TAG_NAME#v}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Install packaging dependencies
         run: |
