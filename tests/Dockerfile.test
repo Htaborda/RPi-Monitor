@@ -1,0 +1,28 @@
+ARG BASE_IMAGE=debian:12-slim
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies needed by install.sh and tests
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    bats \
+    curl \
+    jq \
+    unzip \
+    zip \
+    git \
+    python3 \
+    procps \
+    perl \
+    librrds-perl \
+    libhttp-daemon-perl \
+    libjson-perl \
+    libipc-sharelite-perl \
+    libfile-which-perl \
+    libsnmp-extension-passpersist-perl \
+    aptitude \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
