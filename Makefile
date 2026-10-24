@@ -60,3 +60,8 @@ endif
 
 clean:
 	@echo
+
+.PHONY: test
+test:
+	@./tests/run.sh
+
