@@ -25,3 +25,11 @@ teardown() {
     [ ! -f "${TARGET_DIR}/usr/bin/rpimonitord" ]
     [ ! -d "${TARGET_DIR}/etc/rpimonitor" ]
 }
+
+@test "Dry Run: --version downloads and targets specified release version" {
+    run "${INSTALL_SH}" -y --dry-run --no-service --version 2.14
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Fetching release version 2.14 from GitHub" ]]
+    [[ "$output" =~ "Selected release: v2.14" ]]
+    [[ "$output" =~ "Dry run completed: the system was not modified." ]]
+}
