@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main, feat/update_packaging_and_installation ]
+  pull_request:
+    branches: [ master, main, feat/update_packaging_and_installation ]
+
+jobs:
+  test-installer:
+    name: Test install.sh (${{ matrix.os }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - debian:12-slim
+          - debian:13-slim
+          - ubuntu:22.04
+          - ubuntu:24.04
+          - ubuntu:26.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Bats test suite with Docker
+        env:
+          BASE_IMAGE: ${{ matrix.os }}
+        run: |
+          ./tests/run.sh

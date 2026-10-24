@@ -20,17 +20,19 @@ use strict;
 
 if(which('aptitude')) {
   open ( FILE, 'aptitude -F%p --disable-columns search ~U |') or die "$!\n";
+} elsif (which('apt')) {
+  open ( FILE, 'LC_ALL=C apt list --upgradable 2>/dev/null | grep -v "^Listing" | cut -d/ -f1 |') or die "$!\n";
 } elsif (which('checkupdates')) {
   open ( FILE, 'checkupdates |' ) or die "$!\n";
 } else {
-  die "Error: neither checkupdates nor aptitude seem to be available\n";
+  die "Error: neither aptitude, apt, nor checkupdates seem to be available\n";
 }
 
 my $pkgnbr = 0;
 my $pkglist = "";
 while (<FILE>){
   chomp;
-  $pkglist = "$pkglist $_";+
+  $pkglist = "$pkglist $_";
   $pkgnbr++;
 }
 close (FILE);

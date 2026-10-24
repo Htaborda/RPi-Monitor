@@ -1,0 +1,231 @@
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.23 manpage writer.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "RPIMONITOR" "1" "Oct 18, 2026" "2.13" "RPi-Monitor"
+.SH NAME
+rpimonitor \- RPi-Monitor program
+.SH COMMAND LINE
+.sp
+\fBrpimonitord\fP can be directly executed with the following parameters:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+rpimonitord [\-a address][ \-b pidfile][[\-c configuration_file]...][\-d delay][\-h][\-k][\-l logfile]
+[\-m][\-n][\-p port][\-s][\-t timeout][\-v[v[...]]][\-V]
+.EE
+.UNINDENT
+.UNINDENT
+.SS Options
+.INDENT 0.0
+.TP
+.B \-a,\-\-addr address
+Web server bind address
+Default: 0.0.0.0
+.TP
+.B \-b,\-\-background pid\-file
+Define the pid file when run in background
+Default: not set, application run in foreground
+.TP
+.B \-c,\-\-conf conf\-file
+Define the configuration file
+Default: \fB/etc/rpimonitor/data.conf\fP \fB/etc/rpimonitor/daemon.conf\fP
+.TP
+.B \-d,\-\-delay delay
+Delay between check ins seconds
+Default : 10
+.TP
+.B \-l,\-\-logfile log\-file
+Logfile directory and prefix (ex: \fB/var/log/rpimonitor.log\fP)
+Default: \fB/dev/null\fP
+.TP
+.B \-p,\-\-port port
+Web server port
+Default: 8888
+.TP
+.B \-t,\-\-timeout timeout
+KPI read timeout in seconds
+Default: 5
+.UNINDENT
+.sp
+\fBNote:\fP
+.INDENT 0.0
+.INDENT 3.5
+If you want to change the default \fBdelay\fP, the rrd file will have to be deleted.
+\fBrpimonitord\fP will recreate database at next startup with the new time slice.
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-h,\-\-help
+Shows this help and exit
+.TP
+.B \-i,\-\-interactive
+Interactive configuration helper
+.TP
+.B \-k,\-\-keep
+Keep log file (Default: logfile is delete at each start)
+.TP
+.B \-m,\-\-mib
+Get MIB for current configuration
+.TP
+.B \-n,\-\-noserver
+Don\(aqt start embeded web server
+.TP
+.B \-r,\-\-readonly
+Read only mode.
+.TP
+.B \-s,\-\-show
+Show configuration as loaded and exit
+.TP
+.B \-v,\-\-verbose
+Write debug info on screen
+.TP
+.B \-V,\-\-Version
+Show version and exit
+.UNINDENT
+.SH CONFIGURATION
+.sp
+Configuration can be defined into \fB/etc/rpimonitor/daemon.conf\fP and
+\fB/etc/rpimonitor/data.conf\fP or in a list of files specified by \fB\-c\fP parameter.
+.sp
+In \fB/etc/rpimonitor/template/*.conf\fP, provided at installation, you can see
+how to customize \fBrpimonitord\fP\&.
+.sp
+\fBNote:\fP
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+Configuration defined inside a configuration file always overwrite default values.
+.IP \(bu 2
+Configuration given as command line option always overwrite values defined in files.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBWarning:\fP
+.INDENT 0.0
+.INDENT 3.5
+Be sure to use Linux filefeed format with line ending with LF (and not CR/LF like in Windows)
+.UNINDENT
+.UNINDENT
+.sp
+\fBSee also:\fP
+.INDENT 0.0
+.INDENT 3.5
+See configuration \%<20_index\:.html> chapter for details or usage \%<30_index\:.html> chapter for examples.
+.UNINDENT
+.UNINDENT
+.SH SNMP-AGENT
+.sp
+\fBrpimonitord\-snmp\fP is the snmp agent provided by \fBRPi\-Monitor\fP\&. This agent
+allow \fBsnmpd\fP to access to data exctracted by \fBrpimonitord\fP\&.
+.sp
+\fBSee also:\fP
+.INDENT 0.0
+.INDENT 3.5
+See configuration \%<20_index\:.html> chapter for details or usage \%<30_index\:.html> chapter for examples.
+.UNINDENT
+.UNINDENT
+.SH RAW DATA ACCESS
+.sp
+Once \fBrpimonitord\fP is started the data representing the current status are
+available in json format and can be downloaded from the root of the web interface
+(ex: \%<http://\:raspberrypi\:.local:8888>)
+.INDENT 0.0
+.IP \(bu 2
+\fBstatic.json\fP : Static information extracted at startup
+.IP \(bu 2
+\fBdynamic.json\fP : Current values of dynamic information extracted periodically
+.IP \(bu 2
+\fBmenu.json\fP : Description of menus when multiple pages are configured
+.UNINDENT
+.sp
+The web interface configuration can also be downloaded in json format:
+.INDENT 0.0
+.IP \(bu 2
+\fBstatistics.json\fP : Description of statistics page
+.IP \(bu 2
+\fBstatus.json\fP : Description of status page
+.IP \(bu 2
+\fBfriends.json\fP : List of friends
+.IP \(bu 2
+\fBaddons.json\fP : List of addons
+.UNINDENT
+.sp
+Statistic information are stored into RRD file available in the directory \fB/var/lib/rpimonitor/stat/\fP
+.SH STARTUP SCRIPT
+.sp
+\fBRPi\-Monitor\fP is configured to start automatically. \fB/etc/init.d/rpimonitor\fP
+and link in runlevel startup directory (\fB/etc/rc?.d/\fP) do the job.
+This script can be executed with the following parameters:
+.INDENT 0.0
+.TP
+.B start
+Start \fBrpimonitord\fP daemon
+.TP
+.B stop
+Stop \fBrpimonitord\fP daemon
+.TP
+.B restart
+Stop and start \fBrpimonitord\fP daemon
+.TP
+.B status
+Show \fBrpimonitord\fP status
+.TP
+.B update
+Update \(aqpackages to be installed\(aq list. This information is displayed in default
+configuration of Web interface
+.TP
+.B install_auto_package_status_update
+Add a script to automatically call package update script when \fBapt\fP commands are executed
+.TP
+.B remove_auto_package_status_update
+Remove script automatically call for package update
+.UNINDENT
+.SH MANPAGES
+.sp
+See also \fBRPi\-Monitor\fP manpages :
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+man rpimonitor
+man rpimonitor\-data
+man rpimonitor\-daemon
+.EE
+.UNINDENT
+.UNINDENT
+.SH Author
+Xavier Berger
+.SH Copyright
+2018, Xavier Berger
+.\" End of generated man page.
