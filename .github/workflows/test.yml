@@ -15,9 +15,10 @@ jobs:
       matrix:
         os:
           - debian:12-slim
-          - debian:11-slim
+          - debian:13-slim
           - ubuntu:22.04
           - ubuntu:24.04
+          - ubuntu:26.04
 
     steps:
       - name: Check out repository
