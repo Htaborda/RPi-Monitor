@@ -36,3 +36,9 @@ setup() {
     [ "$status" -eq 1 ]
     [[ "$output" =~ "Non-interactive environment detected without -y/--yes" ]]
 }
+
+@test "CLI: Unexpected positional argument returns error and status 1" {
+    run "${INSTALL_SH}" archive.zip
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "Usage:" ]]
+}
