@@ -155,10 +155,10 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Without -y the confirmation prompt needs a terminal: refuse before downloading
-if [[ $OPT_YES -eq 0 && ! -t 0 ]]; then
-    log_error "Non-interactive environment detected without -y/--yes."
-    log_error "Please specify -y/--yes to confirm automatically, or run in an interactive terminal."
+# Without -y, require an available terminal for confirmation.
+if [[ $OPT_YES -eq 0 && ! -r /dev/tty ]]; then
+    log_error "No interactive terminal available for confirmation."
+    log_error "Please specify -y/--yes to confirm automatically."
     exit 1
 fi
 
@@ -436,7 +436,11 @@ fi
 if [[ $OPT_YES -eq 1 ]]; then
     log_info "Non-interactive mode (-y): proceeding with ${ACTION_DESC} automatically."
 else
-    read -r -p "Do you want to proceed with the ${ACTION_DESC}? [y/N] " response
+    if ! read -r -p "Do you want to proceed with the ${ACTION_DESC}? [y/N] " response </dev/tty; then
+        log_warn "Unable to read confirmation from terminal. Exiting."
+        exit 1
+    fi
+
     case "$response" in
         [yY]|[yY][eE][sS])
             log_info "Proceeding with ${ACTION_DESC}..."
