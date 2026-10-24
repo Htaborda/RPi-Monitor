@@ -1,16 +1,32 @@
-# RPi-Monitor Organization
+# RPi-Monitor Revival
 
-2026-07-14 is a great day... yes, this is the [French national day](https://en.wikipedia.org/wiki/Bastille_Day) but it’s also a new milestone for the **RPi-Monitor** project. Today, I created a GitHub organization so volunteers can join the project, contribute, and help ensure it keeps going.
+After a long pause I decided to restart working on **RPi-Monitor** with the assistance of AI.
 
---- 
+**AI Assisted development** can be something very efficient and will allow me to deliver fast and reliables updates to the project.
 
-![RPi-Monitor logo](docs/source/_static/logo.png)
+Actually, I'm using free token provided by Mistral-Vibe, Codex, Gemini and Cursor and I run quite quickly out of token. So the development don't go as fast as it could.
+
+**You like this project?** **You can participate** by giving a tip on my [Ko-fi](https://ko-fi.com/rpi-monitor) as soon as enough money will be collected, I will subscribe to an AI plan giving me more token to use for the development of **RPi-Monitor**.
+
+**RPi-Monitor** remain free and I don't ask funding for the time I spend doing the development.
+
+![](docs/images/RPi-Monitor_revival.jpeg)
+
+**What will come next ?**
+
+- New installation process based on an install script - already published
+  - **Note**: *Unitary tests are not yet in place so feel free to open an issue if you find a strange behavior.*
+- New documentation based on mdbook
+- New set of tests to validate **RPi-Monitor** bahavior and ensure quick release
+- Review of each remaining issue and PR
+
+**And after ?**
+
+- Theses steps are the fundation of new features and a wider compatibility (Not only debian based distro but any Linux). My overall objective is to port this software to **Rust** ... but this will not occurs without AI assistance... 
 
 # Overview
 
-**RPi-Monitor** is an application designed to perform real time monitoring embedded devices.
-
-The development platform is a [Raspberry Pi](http://raspberrypi.org) B.
+**RPi-Monitor** is an application designed to perform real time monitoring Linux devices. It has initially been designed to run on a [Raspberry Pi](http://raspberrypi.org) B.
 
 **RPi-Monitor** provides a lot of feature such as **Embedded Web server**, **Alert messaging**, **SNMP integration**...
 
@@ -27,7 +43,7 @@ of documentation to see more screenshots.
 
 ## Quick installation
 
-RPi-Monitor can be installed or updated directly from the command line using the installation script. The script downloads the appropriate release from GitHub, verifies its SHA-256 checksum, and installs or updates RPi-Monitor.
+**RPi-Monitor** can be installed or updated directly from the command line using the installation script. The script downloads the appropriate release from GitHub, verifies its SHA-256 checksum, and installs or updates **RPi-Monitor**.
 
 On supported Debian-based systems, run:
 
@@ -43,18 +59,16 @@ This command downloads and executes the installation script without requiring a 
 - Root privileges, provided here by `sudo`.
 - An interactive terminal to confirm the installation, unless `--yes` is specified.
 
-The script automatically selects the latest stable release by default. If RPi-Monitor is already installed using this script, it updates the existing installation and preserves its configuration.
+The script automatically selects the latest stable release by default. If **RPi-Monitor** is already installed using this script, it updates the existing installation and preserves its configuration.
 
-> **Important:** The script must be executed with Bash. Do not replace `bash` with `sh`, as the script uses Bash-specific syntax. The script also refuses to run if RPi-Monitor is still installed through the Debian package; remove that package first with `sudo apt remove rpimonitor`. Your configuration in `/etc/rpimonitor` is kept.
+> **Important:** The script must be executed with Bash. Do not replace `bash` with `sh`, as the script uses Bash-specific syntax. The script also refuses to run if **RPi-Monitor** is still installed through the Debian package; remove that package first with `sudo apt remove rpimonitor`. Your configuration in `/etc/rpimonitor` is kept... but **doing a backup first is always a good idea**.
 
-For more information, see the [installation documentation](https://xavierberger.github.io/RPi-Monitor-docs/11_installation.html).
+<details>
+<summary>Show all installation options</summary>
 
 ## Installation options
 
 The installation script supports options to select a release, automate confirmation, simulate an installation, and customize service management.
-
-<details>
-<summary>Show all installation options</summary>
 
 The options can be passed after the script URL by using `bash -s --`:
 
@@ -64,15 +78,15 @@ curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update
 
 ### Available options
 
-| Option | Description |
-| --- | --- |
-| `-h`, `--help` | Display the available options and exit. |
-| `-y`, `--yes` | Automatically confirm the operation. Required when running without an interactive terminal. |
-| `--version VERSION` | Install a specific published release, for example `--version 2.14`. The optional leading `v` is accepted. |
-| `--pre-release` | Select the newest published release, including pre-releases. Pre-releases may not be stable. |
-| `--force` | Force installation or reinstallation even if the installed version is already up to date. |
-| `--dry-run` | Simulate the installation or update without applying the system changes. Root privileges are still required. |
-| `--no-service` | Skip systemd service management. The script will not enable, start, or restart the service. |
+| Option              | Description                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `-h`, `--help`      | Display the available options and exit.                                                                      |
+| `-y`, `--yes`       | Automatically confirm the operation. Required when running without an interactive terminal.                  |
+| `--version VERSION` | Install a specific published release, for example `--version 2.14`. The optional leading `v` is accepted.    |
+| `--pre-release`     | Select the newest published release, including pre-releases. Pre-releases may not be stable.                 |
+| `--force`           | Force installation or reinstallation even if the installed version is already up to date.                    |
+| `--dry-run`         | Simulate the installation or update without applying the system changes. Root privileges are still required. |
+| `--no-service`      | Skip systemd service management. The script will not enable, start, or restart the service.                  |
 
 ### Examples
 
@@ -138,10 +152,6 @@ sudo TARGET_DIR=/tmp/rpi-root bash ./install.sh --dry-run
 
 </details>
 
-Each release can also be installed with a Debian package for **Raspbian**.
-
-For other (unsupported) distribution (such as Gentoo, ArchLinux) refer to [Custom installation](https://rpi-monitor.github.io/RPi-Monitor-docs/12_custom_installation.html) chapter of documentation.
-
 # Documentation
 
 If you want to install, use or customize **RPi-Monitor** refer to [documentation](https://rpi-monitor.github.io/RPi-Monitor-docs/index.html)
@@ -157,8 +167,6 @@ If you want to participate and propose a pull request, refer to [contributing](h
 
 **Note**: Pull request perfomed on **develop** branch will be integrated as soon as possible. Pull request perform on master branche may only be integrated when a new version is published (or not may not be integrated at all...)
 
-# News / License
-
-**Latest news** : [RPi-Experience Blog](http://rpi-experiences.blogspot.fr/)
+# License
 
 **License**: [GPLv3](LICENSE)
