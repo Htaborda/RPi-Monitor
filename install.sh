@@ -156,7 +156,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Without -y, require an available terminal for confirmation.
-if [[ $OPT_YES -eq 0 && ! -r /dev/tty ]]; then
+if [[ $OPT_YES -eq 0 ]] && ! ( : </dev/tty ) 2>/dev/null; then
     log_error "No interactive terminal available for confirmation."
     log_error "Please specify -y/--yes to confirm automatically."
     exit 1
