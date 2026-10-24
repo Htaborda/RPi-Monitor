@@ -48,7 +48,7 @@ of documentation to see more screenshots.
 On supported Debian-based systems, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash
 ```
 
 This command downloads and executes the installation script without requiring a manual download.
@@ -73,7 +73,7 @@ The installation script supports options to select a release, automate confirmat
 The options can be passed after the script URL by using `bash -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --help
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --help
 ```
 
 ### Available options
@@ -93,49 +93,49 @@ curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update
 **Install the latest stable release and confirm interactively:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash
 ```
 
 **Install a specific release:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --version 2.14
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --version 2.14
 ```
 
 **Install the newest release, including pre-releases:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --pre-release
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --pre-release
 ```
 
 **Run without an interactive confirmation:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --yes
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --yes
 ```
 
 **Simulate an installation or update:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --dry-run
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --dry-run
 ```
 
 **Force reinstallation of the current version:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --force
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --force
 ```
 
 **Install without managing the systemd service:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --no-service
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --no-service
 ```
 
 Options can be combined. For example, to install a specific version automatically without managing the service:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/feat/update_packaging_and_installation/install.sh | sudo bash -s -- --version 2.14 --yes --no-service
+curl -fsSL https://raw.githubusercontent.com/RPi-Monitor/RPi-Monitor/develop/install.sh | sudo bash -s -- --version 2.14 --yes --no-service
 ```
 
 ### Custom deployment root
