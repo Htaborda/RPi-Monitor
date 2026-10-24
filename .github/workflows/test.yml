@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, feat/update_packaging_and_installation ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main, feat/update_packaging_and_installation ]
 
 jobs:
   test-installer:
