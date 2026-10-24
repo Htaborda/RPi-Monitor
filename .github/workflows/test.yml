@@ -1,10 +1,6 @@
 name: Tests
 
-on:
-  push:
-    branches: [ master, main, feat/update_packaging_and_installation ]
-  pull_request:
-    branches: [ master, main, feat/update_packaging_and_installation ]
+on: [pull_request]
 
 jobs:
   test-installer:
