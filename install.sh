@@ -143,10 +143,8 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            log_error "Unexpected argument '$1' (local archive arguments are no longer supported)."
             show_help >&2
             exit 1
-            shift
             ;;
     esac
 done
