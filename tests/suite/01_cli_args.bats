@@ -34,7 +34,7 @@ setup() {
     # Run with stdin closed / /dev/null
     run "${INSTALL_SH}" < /dev/null
     [ "$status" -eq 1 ]
-    [[ "$output" =~ "Non-interactive environment detected without -y/--yes" ]]
+    [[ "$output" =~ "No interactive terminal available for confirmation" ]]
 }
 
 @test "CLI: Unexpected positional argument returns error and status 1" {
