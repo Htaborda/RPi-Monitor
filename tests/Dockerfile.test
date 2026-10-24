@@ -25,4 +25,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Install kcov for code coverage (if available on the base distribution)
+RUN if grep -qi "debian" /etc/os-release && grep -q "12" /etc/os-release; then \
+        echo 'deb http://deb.debian.org/debian bookworm-backports main' > /etc/apt/sources.list.d/backports.list && \
+        apt-get update && \
+        apt-get install -y --no-install-recommends -t bookworm-backports kcov && \
+        rm -rf /var/lib/apt/lists/*; \
+    else \
+        apt-get update && \
+        (apt-get install -y --no-install-recommends kcov || true) && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
 WORKDIR /workspace
