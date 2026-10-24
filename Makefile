@@ -61,7 +61,10 @@ endif
 clean:
 	@echo
 
-.PHONY: test
+.PHONY: test test-coverage
 test:
 	@./tests/run.sh
+
+test-coverage:
+	@./tests/run.sh --coverage
 
