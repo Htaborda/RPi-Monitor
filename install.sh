@@ -73,8 +73,8 @@ DRY_RUN=""
 OPT_YES=0
 OPT_FORCE=0
 OPT_NO_SERVICE=0
+REQUESTED_VERSION=""
 ZIP_FILE=""
-ZIP_PROVIDED=0
 PRE_RELEASE="false"
 PACKAGE_VERSION=""
 TARGET_DIR="${TARGET_DIR:-}"
@@ -82,18 +82,15 @@ TARGET_DIR="${TARGET_DIR:-}"
 
 show_help() {
     cat << 'EOF'
-Usage: sudo ./RPi-Monitor-install_or_update.sh [OPTIONS] [ARCHIVE.zip]
+Usage: sudo ./RPi-Monitor-install_or_update.sh [OPTIONS]
 
 Unified installation and update script for RPi-Monitor (Debian / Raspbian / Ubuntu).
-
-Arguments:
-  ARCHIVE.zip        Local RPi-Monitor zip package (default: download the latest
-                     stable release from GitHub, see --pre-release)
 
 Options:
   -y, --yes          Non-interactive / automatic mode (required to update without a TTY)
   --force            Force installation/update even if already up to date
   --dry-run          Simulate actions: prefix system commands with 'echo' without modifying system
+  --version VERSION  Install the specified release version (for example: 2.14)
   --pre-release      Install the newest release, pre-releases included (may not be stable)
   --no-service       Do not enable or start systemd service (for containerized CI environments)
   -h, --help         Show this help message and exit
@@ -110,6 +107,15 @@ while [[ $# -gt 0 ]]; do
         --dry-run)
             DRY_RUN="echo"
             shift
+            ;;
+        --version)
+            if [[ $# -lt 2 || "$2" == -* ]]; then
+                log_error "Option '--version' requires a version argument."
+                show_help >&2
+                exit 1
+            fi
+            REQUESTED_VERSION="${2#v}"
+            shift 2
             ;;
         --pre-release)
             PRE_RELEASE="true"
@@ -137,14 +143,9 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            if [[ -z "$ZIP_FILE" ]]; then
-                ZIP_FILE="$1"
-                ZIP_PROVIDED=1
-            else
-                log_error "Unexpected argument '$1'"
-                show_help >&2
-                exit 1
-            fi
+            log_error "Unexpected argument '$1' (local archive arguments are no longer supported)."
+            show_help >&2
+            exit 1
             shift
             ;;
     esac
@@ -163,12 +164,7 @@ if [[ $OPT_YES -eq 0 && ! -t 0 ]]; then
     exit 1
 fi
 
-# curl and jq are only needed to download the release
-if [[ ${ZIP_PROVIDED} -eq 0 ]]; then
-    check_tools curl jq unzip
-else
-    check_tools unzip
-fi
+check_tools curl jq unzip
 
 # Refuse to overwrite the Debian package: a later 'apt remove' or 'apt upgrade'
 # would delete or replace the files deployed here. Its removal keeps
@@ -228,14 +224,41 @@ _rpi_fetch_newest_release() {
     echo "${release}"
 }
 
+# Fetch a specific release JSON from GitHub. The public version format omits
+# the conventional leading 'v', while GitHub release tags use it.
+_rpi_fetch_release_by_version() {
+    local version="$1"
+    local tag="v${version#v}"
+    local response
+    response=$(curl --fail --location --silent --show-error \
+        "${GITHUB_API_BASE}/releases/tags/${tag}" 2>&1) || {
+        log_error "Failed to fetch release '${version}' from GitHub API."
+        log_error "The requested version may not exist or may not be published as a release."
+        return 1
+    }
+
+    local fetched_tag
+    fetched_tag=$(echo "${response}" | jq -r '.tag_name // empty' 2>/dev/null)
+    if [[ -z "${fetched_tag}" ]]; then
+        log_error "GitHub API response is missing the 'tag_name' field for version '${version}'."
+        return 1
+    fi
+    echo "${response}"
+}
+
 # Select the appropriate release and download its distribution ZIP asset.
 # Sets globals ZIP_FILE and PACKAGE_VERSION on success.
-# Args: $1 = "true" for pre-release mode, "false" (default) for stable mode.
+# Args: $1 = "true" for pre-release mode, "false" (default) for stable mode;
+#       $2 = requested version, or empty to select the newest release.
 _rpi_download_release_zip() {
     local pre_release="${1:-false}"
+    local requested_version="${2:-}"
 
     local release_json
-    if [[ "${pre_release}" == "true" ]]; then
+    if [[ -n "${requested_version}" ]]; then
+        log_info "Fetching release version ${requested_version} from GitHub..."
+        release_json=$(_rpi_fetch_release_by_version "${requested_version}") || return 1
+    elif [[ "${pre_release}" == "true" ]]; then
         log_info "Fetching newest release (pre-releases included) from GitHub..."
         release_json=$(_rpi_fetch_newest_release) || return 1
     else
@@ -332,11 +355,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# If no ZIP archive was supplied on the command line, download the appropriate
-# release from GitHub. Otherwise use the caller-supplied file as-is.
-if [[ ${ZIP_PROVIDED} -eq 0 ]]; then
-    _rpi_download_release_zip "${PRE_RELEASE}" || exit 1
-fi
+# Download the requested release, or the latest appropriate release when no
+# version was supplied.
+_rpi_download_release_zip "${PRE_RELEASE}" "${REQUESTED_VERSION}" || exit 1
 
 # Verify the package archive is present (guards the case where a path was
 # provided explicitly but does not exist)
